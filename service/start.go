@@ -10,7 +10,7 @@ import (
 
 func (manager *ClientManager) Start() {
 	for {
-		fmt.Println("---监听管道")
+		fmt.Println("---监听管道---")
 		select {
 		case conn := <-Manager.Register:
 			fmt.Printf("有新连接 %v\n ", conn.ID)

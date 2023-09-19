@@ -6,6 +6,7 @@ import (
 	"go-chat/goChat_webSocket/conf"
 	"go-chat/goChat_webSocket/model/ws"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"log"
 	"time"
@@ -97,21 +98,24 @@ func AppendAndSort(resultMe, resultYou []ws.Trainer) (results []ws.Result) {
 func FindUnread(database, sendID string, time int64, pageSize int) (results []ws.Result, err error) {
 	var resultYou []ws.Trainer // sendId
 
-	filter := bson.D{} // 空文档表示无条件
+	filter := bson.D{{"read", 0}} // 空文档表示无条件
+
 	opts := options.Find()
 	opts.SetSort(bson.D{{"startTime", -1}}) // 通过 startTime 倒序排序
 	opts.SetLimit(int64(pageSize))
-	//TODO:添加条件，只获取未读消息
+
 	db := conf.MongoDBClient.Database(database)
 	sendIdCollection := db.Collection(sendID)
 
-	// 限制返回 10 条结果
+	// 限制返回结果
 	cursor, _ := sendIdCollection.Find(context.TODO(), filter, opts)
-
+	//将消息改为已读
+	SetRead(cursor, sendIdCollection)
 	err = cursor.All(context.TODO(), &resultYou)
 	if err != nil {
 		log.Println(err)
 	}
+
 	results = FindUnreadAppend(resultYou)
 	return results, nil
 }
@@ -132,4 +136,16 @@ func FindUnreadAppend(resultYou []ws.Trainer) (results []ws.Result) {
 	}
 
 	return results
+}
+
+func SetRead(cursor *mongo.Cursor, sendIdCollection *mongo.Collection) (err error) {
+	// 改为已读
+	for cursor.Next(context.Background()) {
+		var record bson.M
+		cursor.Decode(&record)
+		record["read"] = 1
+		sendIdCollection.UpdateOne(context.Background(), bson.M{"_id": record["_id"]}, bson.M{"$set": bson.M{"read": 1}})
+
+	}
+	return nil
 }

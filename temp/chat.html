@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket Chat</title>
+    <style>
+        /* 样式用于美化聊天框 */
+        #chatContainer {
+            width: 300px; /* 调整聊天框的宽度 */
+            margin: 0 auto; /* 居中显示 */
+            border: 1px solid #ccc;
+            padding: 10px;
+            overflow-y: scroll; /* 启用滚动条 */
+            max-height: 300px; /* 最大高度以保持界面整洁 */
+        }
+
+        /* 聊天消息的样式 */
+        .chatMessage {
+            margin-bottom: 5px;
+        }
+
+        /* 样式用于消息输入框和发送按钮 */
+        #messageInput {
+            width: 100%;
+        }
+
+        #sendMessageContainer {
+            margin-top: 10px;
+        }
+
+        /* 发送者的消息样式 */
+        .senderMessage {
+            background-color: #DCF8C6;
+            padding: 5px;
+            border-radius: 5px;
+            float: right; /* 右浮动，消息在右侧显示 */
+            clear: both; /* 清除浮动，防止消息重叠 */
+        }
+
+        /* 接收者的消息样式 */
+        .receiverMessage {
+            background-color: #E3E3E3;
+            padding: 5px;
+            border-radius: 5px;
+            float: left; /* 左浮动，消息在左侧显示 */
+            clear: both; /* 清除浮动，防止消息重叠 */
+        }
+    </style>
+</head>
+<body>
+<input type="text" id="uidInput" placeholder="Enter your UID">
+<input type="text" id="toUidInput" placeholder="Enter the recipient's UID">
+<button id="connectButton">Connect to WebSocket</button>
+<button id="disconnectButton">Disconnect</button>
+<div id="chatContainer"></div>
+<div id="sendMessageContainer">
+    <input type="text" id="messageInput" placeholder="Type your message">
+    <input type="number" id="customTypeInput" placeholder="Enter custom message type">
+    <button id="sendButton">Send</button>
+</div>
+
+<script>
+    const uidInput = document.getElementById("uidInput");
+    const toUidInput = document.getElementById("toUidInput");
+    const connectButton = document.getElementById("connectButton");
+    const disconnectButton = document.getElementById("disconnectButton");
+    const chatContainer = document.getElementById("chatContainer");
+    const messageInput = document.getElementById("messageInput");
+    const customTypeInput = document.getElementById("customTypeInput");
+    const sendButton = document.getElementById("sendButton");
+    let websocket;
+
+    connectButton.addEventListener("click", () => {
+        const uid = uidInput.value;
+        const toUid = toUidInput.value;
+
+        // 建立WebSocket连接
+        websocket = new WebSocket(`ws://8.130.100.107:8334/ws?uid=${uid}&toUid=${toUid}`);
+
+        // 在连接打开时执行的操作
+        websocket.addEventListener("open", (event) => {
+            chatContainer.innerHTML += "<div>Connected to WebSocket server</div>";
+        });
+
+        // 在接收到消息时执行的操作
+        websocket.addEventListener("message", (event) => {
+            const data = JSON.parse(event.data);
+
+            // 添加前缀以区分消息发送者
+            let messageContent = data.Content;
+            if (data.from === uid) {
+                messageContent = "我：" + messageContent;
+            } else {
+                messageContent = "你：" + messageContent;
+            }
+
+            // 显示消息
+            const messageClass = data.from === uid ? "senderMessage" : "receiverMessage";
+            chatContainer.innerHTML += `<div class="${messageClass}">${messageContent}</div>`;
+        });
+
+        // 在连接关闭时执行的操作
+        websocket.addEventListener("close", (event) => {
+            chatContainer.innerHTML += "<div>Connection closed</div>";
+        });
+    });
+
+    sendButton.addEventListener("click", () => {
+        const customType = Number(customTypeInput.value); // 用户设置的消息类型，转换为数字
+        const content = messageInput.value;
+
+        // 构建JSON参数
+        const jsonMessage = {
+            content: content,
+            type: customType, // 使用用户设置的类型
+        };
+
+        // 发送JSON参数到WebSocket服务器
+        websocket.send(JSON.stringify(jsonMessage));
+
+        // 清空输入框
+        messageInput.value = "";
+        customTypeInput.value = ""; // 清空消息类型输入框
+
+        // 在聊天框中显示你的消息
+        const messageClass = "senderMessage"; // 你的消息样式类
+        chatContainer.innerHTML += `<div class="${messageClass}">我：${content}</div>`;
+    });
+
+    disconnectButton.addEventListener("click", () => {
+        // 断开WebSocket连接
+        if (websocket) {
+            websocket.close();
+            chatContainer.innerHTML += "<div>Disconnected from WebSocket server</div>";
+        }
+    });
+</script>
+</body>
+</html>

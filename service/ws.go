@@ -67,6 +67,7 @@ func CreateID(uid, toUid string) string {
 	return uid + "->" + toUid
 }
 func Handler(ctx *gin.Context) {
+
 	uid := ctx.Query("uid")
 	toUid := ctx.Query("toUid")
 	conn, err := (&websocket.Upgrader{
@@ -192,6 +193,27 @@ func (c *Client) Read() {
 				msg, _ := json.Marshal(replyMsg)
 				_ = c.Socket.WriteMessage(websocket.TextMessage, msg)
 			}
+		} else if sendMsg.Type == 4 {
+
+			ans, err := chat(sendMsg.Content)
+			if err != nil {
+				replyMsg := ReplyMsg{
+					From:    "",
+					Code:    e.WebsocketError,
+					Content: "出错力",
+				}
+				msg, _ := json.Marshal(replyMsg)
+				_ = c.Socket.WriteMessage(websocket.TextMessage, msg)
+			} else {
+				replyMsg := ReplyMsg{
+					From:    "",
+					Code:    e.WebsocketSuccess,
+					Content: ans,
+				}
+				msg, _ := json.Marshal(replyMsg)
+				_ = c.Socket.WriteMessage(websocket.TextMessage, msg)
+			}
+
 		}
 
 	}
