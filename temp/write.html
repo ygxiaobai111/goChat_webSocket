@@ -1,0 +1,37 @@
+<!DOCTYPE html>  
+<html>  
+<head>  
+    <title>Write Post</title>  
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>  
+</head>  
+<body>  
+    <form id="writeForm">  
+        <input type="text" name="title" id="titleInput" placeholder="Title">  
+        <textarea name="content" id="contentInput" placeholder="Content"></textarea>  
+        <input type="text" name="author" id="authorInput" placeholder="Author">  
+        <input type="submit" value="Submit">  
+    </form>  
+  
+    <script>  
+        $('#writeForm').submit(function(e) {  
+            e.preventDefault();  // 阻止表单的默认提交行为  
+  
+            var title = $('#titleInput').val();  
+            var content = $('#contentInput').val();  
+            var author = $('#authorInput').val();  
+  
+            $.post("/write/create", {  
+                title: title,  
+                content: content,  
+                author: author  
+            }).done(function(response) {  
+                // 这里可以处理服务器的响应，例如显示一个成功消息  
+                console.log("Post created successfully!");  
+            }).fail(function() {  
+                // 这里可以处理请求失败的情况，例如显示一个错误消息  
+                console.error("Failed to create post.");  
+            });  
+        });  
+    </script>  
+</body>  
+</html>
